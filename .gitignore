@@ -27,3 +27,5 @@ yarn-error.log*
 /dist
 
 db.json
+
+keys.js
