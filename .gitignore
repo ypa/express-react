@@ -28,4 +28,4 @@ yarn-error.log*
 
 db.json
 
-keys.js
+dev.js
