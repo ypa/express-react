@@ -16,11 +16,21 @@ module.exports = (app) => {
   });
 
   app.post('/api/surveys/webhooks', (req, res) => {
-    const events = _.map(req.body, (event) => {
-      const pathname = new URL(event.url).pathname;
+    const events = _.map(req.body, ({ email, url }) => {
+      const pathname = new URL(url).pathname;
       const p = new Path('/api/surveys/:surveyId/:choice');
-      console.log(p.test(pathname));
+      const match = p.test(pathname);
+      if (match) {
+        return { email, surveyId: match.surveyId, choice: match.choice };
+      }
     });
+
+    // remove undefined
+    const compactEvents = _.compact(events);
+    // Remove duplicate same email + surveyId combo
+    const uniqueEvents = _.uniqBy(compactEvents, 'email', 'surveyId');
+
+    console.log(uniqueEvents);
     res.send({});
   });
 
