@@ -4,7 +4,6 @@ const { URL } = require('url');
 const mongoose = require('mongoose');
 const requireLogin = require('../middlewares/requireLogin');
 const requireCredits = require('../middlewares/requireCredits');
-const recipientSchema = require('../models/Recipient');
 const Mailer = require('../services/Mailer');
 const surveyTemplate = require('../services/emailTemplates/surveyTemplate');
 
@@ -18,7 +17,7 @@ module.exports = (app) => {
   app.post('/api/surveys/webhooks', (req, res) => {
     const p = new Path('/api/surveys/:surveyId/:choice');
 
-    const events = _.chain(req.body)
+    _.chain(req.body)
       .map(({ email, url }) => {
         const match = p.test(new URL(url).pathname);
         if (match) {
@@ -27,9 +26,22 @@ module.exports = (app) => {
       })
       .compact() // remove undefined
       .uniqBy('email', 'surveyId') // Remove duplicate same email + surveyId combo
+      .each(({ surveyId, email, choice }) => {
+        Survey.updateOne(
+          {
+            _id: surveyId,
+            recipients: {
+              $elemMatch: { email: email, responded: false },
+            },
+          },
+          {
+            $inc: { [choice]: 1 },
+            $set: { 'recipients.$.responded': true },
+          }
+        ).exec();
+      })
       .value();
 
-    console.log(events);
     res.send({});
   });
 
